@@ -86,14 +86,17 @@ install_unzip() {
     fi
 }
 
+
 install_easytier() {
-    # Define the directory and the files
+    # Define the directory and files
     DEST_DIR="/root/easytier"
     FILE1="easytier-core"
     FILE2="easytier-cli"
-    URL="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
-    ZIP_FILE="/root/easytier/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
-
+    URL_X86="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
+    URL_ARM_SOFT="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabi-v1.1.0.zip"              
+    URL_ARM_HARD="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabihf-v1.1.0.zip"
+    
+    
     # Check if the directory exists
     if [ -d "$DEST_DIR" ]; then    
         # Check if the files exist
@@ -102,6 +105,25 @@ install_easytier() {
             return 0
         fi
     fi
+    
+    # Detect the system architecture
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        URL=$URL_X86
+        ZIP_FILE="/root/easytier/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
+    elif [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "aarch64" ]; then
+        if [ "$(ldd /bin/ls | grep -c 'armhf')" -eq 1 ]; then
+            URL=$URL_ARM_HARD
+            ZIP_FILE="/root/easytier/easytier-armv7-unknown-linux-musleabihf-v1.1.0.zip"
+        else
+            URL=$URL_ARM_SOFT
+            ZIP_FILE="/root/easytier/easytier-armv7-unknown-linux-musleabi-v1.1.0.zip"
+        fi
+    else
+        colorize red "Unsupported architecture: $ARCH\n" bold
+        return 1
+    fi
+
 
     colorize yellow "Installing EasyMesh Core...\n" bold
     mkdir -p $DEST_DIR &> /dev/null
@@ -118,6 +140,8 @@ install_easytier() {
         return 1
     fi
 }
+
+
 
 # Call the functions
 install_unzip
