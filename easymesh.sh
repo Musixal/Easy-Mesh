@@ -151,7 +151,6 @@ generate_random_secret() {
     openssl rand -hex 16
 }
 
-
 #Var
 EASY_CLIENT='/root/easytier/easytier-cli'
 SERVICE_FILE="/etc/systemd/system/easymesh.service"
@@ -161,10 +160,15 @@ connect_network_pool(){
 	colorize cyan "Coonect to the Mesh Network" bold 
 	echo ''
 	
-	read -p "[-] Enter Peer IPv4 Address (e.g., 37.32.21.xx): " PEER_ADDRESS
-
-    # Prompt the user for input data
-    read -p "[*] Enter Local IP Address (e.g., 10.144.144.1): " IP_ADDRESS
+	read -p "[-] Enter Peer IPv4/IPv6 Address: " PEER_ADDRESS
+     if [[ "$PEER_ADDRESS" == *:* ]]; then
+        # Check if the IP address already has brackets
+        if [[ "$PEER_ADDRESS" != \[*\] ]]; then
+            PEER_ADDRESS="[$PEER_ADDRESS]"
+        fi
+    fi
+    
+    read -p "[*] Enter Local IPv4 Address (e.g., 10.144.144.1): " IP_ADDRESS
     if [ -z $IP_ADDRESS ]; then
     	colorize red "Null value. aborting..."
     	sleep 2
@@ -178,7 +182,12 @@ connect_network_pool(){
     	return 1
     fi
     
-	
+    read -p "[-] Enter Tunnel Port (Default 2090): " PORT
+    if [ -z $PORT ]; then
+    	colorize red "Default port is 2090..."
+    	PORT='2090'
+    fi
+    
 	echo ''
     NETWORK_SECRET=$(generate_random_secret)
     colorize cyan "[✓] Generated Network Secret: $NETWORK_SECRET" bold
@@ -190,6 +199,8 @@ connect_network_pool(){
         colorize red "Network secret cannot be empty. Please enter a valid secret.\n"
     fi
 	done
+	
+	
 
 	echo ''
     colorize green "[-] Select Default Protocol:" bold
@@ -199,16 +210,11 @@ connect_network_pool(){
     echo "4) wss"
     read -p "[*] Select your desired protocol (e.g., 1 for tcp): " PROTOCOL_CHOICE
 	
-	port="11010"
     case $PROTOCOL_CHOICE in
         1) DEFAULT_PROTOCOL="tcp" ;;
         2) DEFAULT_PROTOCOL="udp" ;;
-        3) DEFAULT_PROTOCOL="ws" 
-        	port="11011"
-        ;;
-        4) DEFAULT_PROTOCOL="wss" 
-      	    port="11012"
-        ;;
+        3) DEFAULT_PROTOCOL="ws" ;;
+        4) DEFAULT_PROTOCOL="wss" ;;
         *) colorize red "Invalid choice. Defaulting to tcp." ; DEFAULT_PROTOCOL="tcp" ;;
     esac
 	
@@ -224,12 +230,14 @@ connect_network_pool(){
        		colorize yellow "Encryption is enabled"
              ;;
 	esac
+	
 	echo ''
 	
-	
 	if [ ! -z $PEER_ADDRESS ]; then
-		PEER_ADDRESS="--peers ${DEFAULT_PROTOCOL}://${PEER_ADDRESS}:${port}"
+		PEER_ADDRESS="--peers ${DEFAULT_PROTOCOL}://${PEER_ADDRESS}:${PORT}"
     fi
+    
+    LISTENERS="--listeners ${DEFAULT_PROTOCOL}://[::]:${PORT} ${DEFAULT_PROTOCOL}://0.0.0.0:${PORT}"
     
     SERVICE_FILE="/etc/systemd/system/easymesh.service"
     
@@ -239,7 +247,7 @@ Description=EasyMesh Network Service
 After=network.target
 
 [Service]
-ExecStart=/root/easytier/easytier-core -i $IP_ADDRESS $PEER_ADDRESS --hostname $HOSTNAME --network-secret $NETWORK_SECRET --default-protocol $DEFAULT_PROTOCOL --multi-thread $ENCRYPTION_OPTION
+ExecStart=/root/easytier/easytier-core -i $IP_ADDRESS $PEER_ADDRESS --hostname $HOSTNAME --network-secret $NETWORK_SECRET --default-protocol $DEFAULT_PROTOCOL $LISTENERS --multi-thread $ENCRYPTION_OPTION
 Restart=on-failure
 
 [Install]
@@ -375,7 +383,7 @@ echo -e "   ${CYAN}╔═══════════════════�
 echo -e "   ║            🌐 ${WHITE}EasyMesh                 ${CYAN}║"
 echo -e "   ║        ${WHITE}VPN Network Solution            ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║  ${WHITE}Version: 0.9 beta                     ${CYAN}║"
+echo -e "   ║  ${WHITE}Version: 0.92 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
