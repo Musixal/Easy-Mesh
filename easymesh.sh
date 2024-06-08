@@ -171,7 +171,7 @@ connect_network_pool(){
     	return 1
     fi
     
-    read -p "[*] Enter Hostname (e.g., Hetnzer): " HOSTNAME
+    read -r -p "[*] Enter Hostname (e.g., Hetnzer): " HOSTNAME
     if [ -z $HOSTNAME ]; then
     	colorize red "Null value. aborting..."
     	sleep 2
