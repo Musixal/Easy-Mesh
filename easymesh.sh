@@ -161,24 +161,6 @@ connect_network_pool(){
 	echo ''
 	
     read -p "[-] Enter Peer IPv4/IPv6 Addresses (separate multiple addresses by ','): " PEER_ADDRESSES
-    IFS=',' read -ra ADDR_ARRAY <<< "$PEER_ADDRESSES"
-    
-    PROCESSED_ADDRESSES=()
-    for ADDRESS in "${ADDR_ARRAY[@]}"; do
-        ADDRESS=$(echo $ADDRESS | xargs)
-        
-        if [[ "$ADDRESS" == *:* ]]; then
-            if [[ "$ADDRESS" != \[*\] ]]; then
-                ADDRESS="[$ADDRESS]"
-            fi
-        fi
-    
-        if [ ! -z "$ADDRESS" ]; then
-            PROCESSED_ADDRESSES+=("${DEFAULT_PROTOCOL}://${ADDRESS}:${PORT}")
-        fi
-    done
-    
-    JOINED_ADDRESSES=$(IFS=' '; echo "${PROCESSED_ADDRESSES[*]}")
     
     read -p "[*] Enter Local IPv4 Address (e.g., 10.144.144.1): " IP_ADDRESS
     if [ -z $IP_ADDRESS ]; then
@@ -244,7 +226,26 @@ connect_network_pool(){
 	esac
 	
 	echo ''
-	
+
+    
+    IFS=',' read -ra ADDR_ARRAY <<< "$PEER_ADDRESSES"
+    PROCESSED_ADDRESSES=()
+    for ADDRESS in "${ADDR_ARRAY[@]}"; do
+        ADDRESS=$(echo $ADDRESS | xargs)
+        
+        if [[ "$ADDRESS" == *:* ]]; then
+            if [[ "$ADDRESS" != \[*\] ]]; then
+                ADDRESS="[$ADDRESS]"
+            fi
+        fi
+    
+        if [ ! -z "$ADDRESS" ]; then
+            PROCESSED_ADDRESSES+=("${DEFAULT_PROTOCOL}://${ADDRESS}:${PORT}")
+        fi
+    done
+    
+    JOINED_ADDRESSES=$(IFS=' '; echo "${PROCESSED_ADDRESSES[*]}")
+    
     if [ ! -z "$JOINED_ADDRESSES" ]; then
         PEER_ADDRESS="--peers ${JOINED_ADDRESSES}"
     fi
