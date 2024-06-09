@@ -160,13 +160,25 @@ connect_network_pool(){
 	colorize cyan "Coonect to the Mesh Network" bold 
 	echo ''
 	
-	read -p "[-] Enter Peer IPv4/IPv6 Address: " PEER_ADDRESS
-     if [[ "$PEER_ADDRESS" == *:* ]]; then
-        # Check if the IP address already has brackets
-        if [[ "$PEER_ADDRESS" != \[*\] ]]; then
-            PEER_ADDRESS="[$PEER_ADDRESS]"
+    read -p "[-] Enter Peer IPv4/IPv6 Addresses (separate multiple addresses by ','): " PEER_ADDRESSES
+    IFS=',' read -ra ADDR_ARRAY <<< "$PEER_ADDRESSES"
+    
+    PROCESSED_ADDRESSES=()
+    for ADDRESS in "${ADDR_ARRAY[@]}"; do
+        ADDRESS=$(echo $ADDRESS | xargs)
+        
+        if [[ "$ADDRESS" == *:* ]]; then
+            if [[ "$ADDRESS" != \[*\] ]]; then
+                ADDRESS="[$ADDRESS]"
+            fi
         fi
-    fi
+    
+        if [ ! -z "$ADDRESS" ]; then
+            PROCESSED_ADDRESSES+=("${DEFAULT_PROTOCOL}://${ADDRESS}:${PORT}")
+        fi
+    done
+    
+    JOINED_ADDRESSES=$(IFS=' '; echo "${PROCESSED_ADDRESSES[*]}")
     
     read -p "[*] Enter Local IPv4 Address (e.g., 10.144.144.1): " IP_ADDRESS
     if [ -z $IP_ADDRESS ]; then
@@ -233,8 +245,8 @@ connect_network_pool(){
 	
 	echo ''
 	
-	if [ ! -z $PEER_ADDRESS ]; then
-		PEER_ADDRESS="--peers ${DEFAULT_PROTOCOL}://${PEER_ADDRESS}:${PORT}"
+    if [ ! -z "$JOINED_ADDRESSES" ]; then
+        PEER_ADDRESS="--peers ${JOINED_ADDRESSES}"
     fi
     
     LISTENERS="--listeners ${DEFAULT_PROTOCOL}://[::]:${PORT} ${DEFAULT_PROTOCOL}://0.0.0.0:${PORT}"
@@ -383,7 +395,7 @@ echo -e "   ${CYAN}╔═══════════════════�
 echo -e "   ║            🌐 ${WHITE}EasyMesh                 ${CYAN}║"
 echo -e "   ║        ${WHITE}VPN Network Solution            ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║  ${WHITE}Version: 0.92 beta                    ${CYAN}║"
+echo -e "   ║  ${WHITE}Version: 0.93 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
