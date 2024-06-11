@@ -542,7 +542,7 @@ echo -e "   ╚═════════════════════�
     colorize reset "	[4] Peer-Center"
     colorize reset "	[5] Display Secret Key"
     colorize reset "	[6] View Service Status"  
-    colorize reset "	[7] Set Watchdog"  
+    colorize reset "	[7] Set Watchdog (Auto-Restarter)"  
     colorize yellow "	[8] Restart Service" 
     colorize magenta "	[9] Remove Service" 
     echo -e "	[10] Exit" 
