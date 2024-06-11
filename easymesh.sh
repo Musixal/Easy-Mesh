@@ -388,6 +388,137 @@ view_service_status() {
     sudo systemctl status easymesh.service
 }
 
+set_watchdog(){
+	clear
+	 view_watchdog_status
+	echo ''
+	colorize cyan "Select your option:" bold
+	colorize green "1) Start Watchdog"
+	colorize red "2) Stop Watchdog"
+    colorize yellow "3) View Logs"
+    colorize reset "4) Back"
+    echo ''
+    read -p "Enter your choice: " CHOICE
+    case $CHOICE in 
+    	1) start_watchdog ;;
+    	2) stop_watchdog ;;
+    	3) view_logs ;;
+    	4) return 0;;
+    	*) colorize red "Invalid option!" bold && sleep 1 && return 1;;
+    esac
+
+}
+
+start_watchdog(){
+	clear
+	colorize cyan "Important: You can check the status of the service \nand restart it if the latency is higher than a certain limit. \nI recommend to run it only on one server and preferably outside (Kharej) server" bold
+	echo ''
+	
+	read -p "Enter the local IP address to monitor: " IP_ADDRESS
+	read -p "Enter the latency threshold in ms (200): " LATENCY_THRESHOLD
+	read -p "Enter the time between checks in seconds (5): " CHECK_INTERVAL
+	
+	rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null
+	touch /etc/monitor.sh /etc/monitor.log &> /dev/null
+	
+	 cat << EOF | sudo tee /etc/monitor.sh > /dev/null
+#!/bin/bash
+
+# Configuration
+IP_ADDRESS="$IP_ADDRESS"
+LATENCY_THRESHOLD=$LATENCY_THRESHOLD
+CHECK_INTERVAL=$CHECK_INTERVAL
+SERVICE_NAME="easymesh.service"
+LOG_FILE="/etc/monitor.log"
+
+# Function to restart the service
+restart_service() {
+    local restart_time=\$(date +"%Y-%m-%d %H:%M:%S")
+    sudo systemctl restart "\$SERVICE_NAME"
+    if [ \$? -eq 0 ]; then
+        echo "\$restart_time: Service \$SERVICE_NAME restarted successfully." >> "\$LOG_FILE"
+    else
+        echo "\$restart_time: Failed to restart service \$SERVICE_NAME." >> "\$LOG_FILE"
+    fi
+}
+
+# Main monitoring loop
+while true; do
+    # Ping the IP address and extract the latency
+    PING_RESULT=\$(ping -c 1 -W 2 "\$IP_ADDRESS" | grep 'time=')
+    if [ -z "\$PING_RESULT" ]; then
+        echo "\$(date +"%Y-%m-%d %H:%M:%S"): Failed to ping \$IP_ADDRESS. Restarting service..." >> "\$LOG_FILE"
+        restart_service
+    else
+        LATENCY=\$(echo "\$PING_RESULT" | sed -n 's/.*time=\([0-9.]*\) ms.*/\1/p')
+        #echo "\$(date +"%Y-%m-%d %H:%M:%S"): Ping to \$IP_ADDRESS: \$LATENCY ms" >> "\$LOG_FILE"
+        
+        # Check if the latency exceeds the threshold
+        LATENCY_INT=\${LATENCY%.*}  # Convert latency to integer for comparison
+        if [ "\$LATENCY_INT" -gt "\$LATENCY_THRESHOLD" ]; then
+            echo "\$(date +"%Y-%m-%d %H:%M:%S"): Latency \$LATENCY ms exceeds threshold of \$LATENCY_THRESHOLD ms. Restarting service..." >> "\$LOG_FILE"
+            restart_service
+        fi
+    fi
+
+    # Wait for the specified interval before checking again
+    sleep "\$CHECK_INTERVAL"
+done
+EOF
+
+echo ''
+# Execute the script in the background
+    (bash /etc/monitor.sh > /dev/null 2>&1 &)
+    if [ $? -eq 0 ]; then
+        colorize green "Watchdog started successfully." bold
+    else
+        colorize red "Failed to start watchdog." bold
+    fi
+    echo ''
+press_key
+}
+
+# Function to stop the watchdog
+stop_watchdog() {
+	echo ''
+    PIDS=$(pgrep -f /etc/monitor.sh)
+    if [ -n "$PIDS" ]; then
+        pkill -f /etc/monitor.sh > /dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            colorize green "Watchdog stopped successfully." bold
+        else
+            colorize red "Failed to stop watchdog." bold
+        fi
+    else
+        colorize yellow "Watchdog is not running." bold
+    fi
+    echo ''
+    rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null
+    press_key
+}
+
+view_watchdog_status(){
+    PIDS=$(pgrep -f /etc/monitor.sh)
+    if [ -z "$PIDS" ]; then
+    	colorize red "	Watchdog is not running" bold
+    else
+    	colorize green "	Watchdog is running" bold
+    fi
+    echo "---------------------------------------------"
+}
+# Function to view logs
+view_logs() {
+    if [ -f /etc/monitor.log ]; then
+        tail -f /etc/monitor.log
+    else
+    	echo ''
+        colorize yellow "No logs found.\n" bold
+        press_key
+    fi
+    
+}
+
+
 # Function to display menu
 display_menu() {
     clear
@@ -404,7 +535,6 @@ echo -e "   ╠═════════════════════�
 echo -e "   ║        ${WHITE}EasyMesh Core Installed         ${CYAN}║"
 echo -e "   ╚════════════════════════════════════════╝${RESET}"
 
- 
     echo ''
     colorize green "	[1] Connect to the Mesh Network" bold 
     colorize yellow "	[2] Display Peers" 
@@ -412,9 +542,10 @@ echo -e "   ╚═════════════════════�
     colorize reset "	[4] Peer-Center"
     colorize reset "	[5] Display Secret Key"
     colorize reset "	[6] View Service Status"  
-    colorize yellow "	[7] Restart Service" 
-    colorize magenta "	[8] Remove Service" 
-    echo -e "	[9] Exit" 
+    colorize reset "	[7] Set Watchdog"  
+    colorize yellow "	[8] Restart Service" 
+    colorize magenta "	[9] Remove Service" 
+    echo -e "	[10] Exit" 
     echo ''
 }
 
@@ -431,9 +562,10 @@ read_option() {
         4) peer_center ;;
         5) show_network_secret ;;
         6) view_service_status ;;
-        7) restart_easymesh_service ;;
-        8) remove_easymesh_service ;;
-        9) exit 0 ;;
+        7) set_watchdog ;;
+        8) restart_easymesh_service ;;
+        9) remove_easymesh_service ;;
+        10) exit 0 ;;
         *) colorize red "	Invalid option!" bold && sleep 1 ;;
     esac
 }
