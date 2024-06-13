@@ -416,12 +416,12 @@ start_watchdog(){
 	
 	read -p "Enter the local IP address to monitor: " IP_ADDRESS
 	read -p "Enter the latency threshold in ms (200): " LATENCY_THRESHOLD
-	read -p "Enter the time between checks in seconds (5): " CHECK_INTERVAL
+	read -p "Enter the time between checks in seconds (8): " CHECK_INTERVAL
 	
 	rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null
 	touch /etc/monitor.sh /etc/monitor.log &> /dev/null
 	
-	 cat << EOF | sudo tee /etc/monitor.sh > /dev/null
+cat << EOF | sudo tee /etc/monitor.sh > /dev/null
 #!/bin/bash
 
 # Configuration
@@ -442,21 +442,36 @@ restart_service() {
     fi
 }
 
+# Function to calculate average latency
+calculate_average_latency() {
+    local latencies=(\$(ping -c 3 -W 2 -i 0.2 "\$IP_ADDRESS" | grep 'time=' | sed -n 's/.*time=\([0-9.]*\) ms.*/\1/p'))
+    local total_latency=0
+    local count=\${#latencies[@]}
+
+    for latency in "\${latencies[@]}"; do
+        total_latency=\$(echo "\$total_latency + \$latency" | bc)
+    done
+
+    if [ \$count -gt 0 ]; then
+        local average_latency=\$(echo "scale=2; \$total_latency / \$count" | bc)
+        echo \$average_latency
+    else
+        echo 0
+    fi
+}
+
 # Main monitoring loop
 while true; do
-    # Ping the IP address and extract the latency
-    PING_RESULT=\$(ping -c 1 -W 2 "\$IP_ADDRESS" | grep 'time=')
-    if [ -z "\$PING_RESULT" ]; then
+    # Calculate average latency
+    AVG_LATENCY=\$(calculate_average_latency)
+    
+    if [ "\$AVG_LATENCY" == "0" ]; then
         echo "\$(date +"%Y-%m-%d %H:%M:%S"): Failed to ping \$IP_ADDRESS. Restarting service..." >> "\$LOG_FILE"
         restart_service
     else
-        LATENCY=\$(echo "\$PING_RESULT" | sed -n 's/.*time=\([0-9.]*\) ms.*/\1/p')
-        #echo "\$(date +"%Y-%m-%d %H:%M:%S"): Ping to \$IP_ADDRESS: \$LATENCY ms" >> "\$LOG_FILE"
-        
-        # Check if the latency exceeds the threshold
-        LATENCY_INT=\${LATENCY%.*}  # Convert latency to integer for comparison
+        LATENCY_INT=\${AVG_LATENCY%.*}  # Convert latency to integer for comparison
         if [ "\$LATENCY_INT" -gt "\$LATENCY_THRESHOLD" ]; then
-            echo "\$(date +"%Y-%m-%d %H:%M:%S"): Latency \$LATENCY ms exceeds threshold of \$LATENCY_THRESHOLD ms. Restarting service..." >> "\$LOG_FILE"
+            echo "\$(date +"%Y-%m-%d %H:%M:%S"): Average latency \$AVG_LATENCY ms exceeds threshold of \$LATENCY_THRESHOLD ms. Restarting service..." >> "\$LOG_FILE"
             restart_service
         fi
     fi
@@ -465,6 +480,7 @@ while true; do
     sleep "\$CHECK_INTERVAL"
 done
 EOF
+
 
 echo ''
 # Execute the script in the background
