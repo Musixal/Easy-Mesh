@@ -525,7 +525,7 @@ view_watchdog_status(){
 # Function to view logs
 view_logs() {
     if [ -f /etc/monitor.log ]; then
-        tail -f /etc/monitor.log
+        less +G /etc/monitor.log
     else
     	echo ''
         colorize yellow "No logs found.\n" bold
