@@ -15,11 +15,11 @@ bash <(curl -Ls https://github.com/Musixal/easy-mesh/raw/main/easymesh.sh)
 
 Part 1:
 
-[![Watch the video](https://img.youtube.com/vi/6U0c3gTxdU8/maxresdefault.jpg)](https://www.youtube.com/watch?v=6U0c3gTxdU8)
+[![Watch the video](https://i.ytimg.com/vi/6U0c3gTxdU8/sddefault.jpg)](https://www.youtube.com/watch?v=6U0c3gTxdU8)
 
 Part2:
 
-[![Watch the video](https://img.youtube.com/vi/-1uZTIiyts8/maxresdefault.jpg)](https://www.youtube.com/watch?v=-1uZTIiyts8)
+[![Watch the video](https://i.ytimg.com/vi/-1uZTIiyts8/sddefault.jpg)](https://www.youtube.com/watch?v=-1uZTIiyts8)
 
 
 
