@@ -677,7 +677,7 @@ echo -e "   ╚═════════════════════�
     colorize reset "	[4] Peer-Center"
     colorize reset "	[5] Display Secret Key"
     colorize reset "	[6] View Service Status"  
-    colorize reset "	[7] Set Watchdog [Deprecated]"
+    colorize reset "	[7] Set Watchdog [Auto-Restarter]"
     colorize reset "	[8] Cron-jon setting"   
     colorize yellow "	[9] Restart Service" 
     colorize magenta "	[10] Remove Service" 
