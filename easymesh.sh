@@ -148,7 +148,7 @@ install_unzip
 install_easytier
 
 generate_random_secret() {
-    openssl rand -hex 16
+    openssl rand -hex 6
 }
 
 #Var
@@ -157,7 +157,7 @@ SERVICE_FILE="/etc/systemd/system/easymesh.service"
     
 connect_network_pool(){
 	clear
-	colorize cyan "Coonect to the Mesh Network" bold 
+	colorize cyan "Connect to the Mesh Network" bold 
 	echo ''
 	
     read -p "[-] Enter Peer IPv4/IPv6 Addresses (separate multiple addresses by ','): " PEER_ADDRESSES
@@ -390,7 +390,7 @@ view_service_status() {
 
 set_watchdog(){
 	clear
-	 view_watchdog_status
+	view_watchdog_status
 	echo ''
 	colorize cyan "Select your option:" bold
 	colorize green "1) Start Watchdog"
@@ -535,6 +535,125 @@ view_logs() {
 }
 
 
+# Function to add cron-tab job
+add_cron_job() {
+	echo 
+
+	local service_name="easymesh.service"
+	
+    # Prompt user to choose a restart time interval
+    colorize cyan "Select the restart time interval:" bold
+    echo
+    echo "1. Every 30th minute"
+    echo "2. Every 1 hour"
+    echo "3. Every 2 hours"
+    echo "4. Every 4 hours"
+    echo "5. Every 6 hours"
+    echo "6. Every 12 hours"
+    echo "7. Every 24 hours"
+    echo
+    read -p "Enter your choice: " time_choice
+    # Validate user input for restart time interval
+    case $time_choice in
+        1)
+            restart_time="*/30 * * * *"
+            ;;
+        2)
+            restart_time="0 * * * *"
+            ;;
+        3)
+            restart_time="0 */2 * * *"
+            ;;
+        4)
+            restart_time="0 */4 * * *"
+            ;;
+        5)
+            restart_time="0 */6 * * *"
+            ;;
+        6)
+            restart_time="0 */12 * * *"
+            ;;
+        7)
+            restart_time="0 0 * * *"
+            ;;
+        *)
+            echo -e "${RED}Invalid choice. Please enter a number between 1 and 7.${NC}\n"
+            sleep 2
+            return 1
+            ;;
+    esac
+
+
+    # remove cronjob created by this script
+    delete_cron_job > /dev/null 2>&1
+    
+    # Path to reset file
+    local reset_path="/root/easytier/reset.sh"
+    
+    #add cron job to kill the running easymesh processes
+    cat << EOF > "$reset_path"
+#! /bin/bash
+pids=\$(pgrep easytier)
+sudo kill -9 \$pids
+sudo systemctl daemon-reload
+sudo systemctl restart $service_name
+EOF
+
+    # make it +x
+    chmod +x "$reset_path"
+    
+    # Save existing crontab to a temporary file
+    crontab -l > /tmp/crontab.tmp
+
+    # Append the new cron job to the temporary file
+    echo "$restart_time $reset_path #$service_name" >> /tmp/crontab.tmp
+
+    # Install the modified crontab from the temporary file
+    crontab /tmp/crontab.tmp
+
+    # Remove the temporary file
+    rm /tmp/crontab.tmp
+    
+    echo
+    colorize green "Cron-job added successfully to restart the service '$service_name'." bold
+    sleep 2
+}
+
+delete_cron_job() {
+    echo
+    local service_name="easymesh.service"
+    local reset_path="/root/easytier/reset.sh"
+    
+    crontab -l | grep -v "#$service_name" | crontab -
+    rm -f "$reset_path" >/dev/null 2>&1
+    
+    colorize green "Cron job for $service_name deleted successfully." bold
+    
+    sleep 2
+}
+
+set_cronjob(){
+   	clear
+   	colorize cyan "Cron-job setting menu" bold
+   	echo 
+   	
+   	colorize green "1) Add a new cronjob"
+   	colorize red "2) Delete existing cronjob"
+   	colorize reset "3) Return..."
+   	
+   	echo
+   	echo -ne "Select you option [1-3]: "
+   	read -r choice
+   	
+   	case $choice in 
+   		1) add_cron_job ;;
+   		2) delete_cron_job ;;
+   		3) return 0 ;;
+   		*) colorize red "Invalid option!" && sleep 1 && return 1 ;;
+   	esac
+   	
+}
+
 # Function to display menu
 display_menu() {
     clear
@@ -558,10 +677,11 @@ echo -e "   ╚═════════════════════�
     colorize reset "	[4] Peer-Center"
     colorize reset "	[5] Display Secret Key"
     colorize reset "	[6] View Service Status"  
-    colorize reset "	[7] Set Watchdog (Auto-Restarter)"  
-    colorize yellow "	[8] Restart Service" 
-    colorize magenta "	[9] Remove Service" 
-    echo -e "	[10] Exit" 
+    colorize reset "	[7] Set Watchdog [Deprecated]"
+    colorize reset "	[8] Cron-jon setting"   
+    colorize yellow "	[9] Restart Service" 
+    colorize magenta "	[10] Remove Service" 
+    echo -e "	[0] Exit" 
     echo ''
 }
 
@@ -579,9 +699,10 @@ read_option() {
         5) show_network_secret ;;
         6) view_service_status ;;
         7) set_watchdog ;;
-        8) restart_easymesh_service ;;
-        9) remove_easymesh_service ;;
-        10) exit 0 ;;
+        8) set_cronjob ;;
+        9) restart_easymesh_service ;;
+        10) remove_easymesh_service ;;
+        0) exit 0 ;;
         *) colorize red "	Invalid option!" bold && sleep 1 ;;
     esac
 }
