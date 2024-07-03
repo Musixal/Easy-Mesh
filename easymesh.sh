@@ -391,10 +391,11 @@ view_service_status() {
 set_watchdog(){
 	clear
 	view_watchdog_status
-	echo ''
+	echo "---------------------------------------------"
+	echo 
 	colorize cyan "Select your option:" bold
-	colorize green "1) Start Watchdog"
-	colorize red "2) Stop Watchdog"
+	colorize green "1) Create watchdog service"
+	colorize red "2) Stop & remove watchdog service"
     colorize yellow "3) View Logs"
     colorize reset "4) Back"
     echo ''
@@ -482,45 +483,61 @@ done
 EOF
 
 
-echo ''
-# Execute the script in the background
-    (bash /etc/monitor.sh > /dev/null 2>&1 &)
-    if [ $? -eq 0 ]; then
-        colorize green "Watchdog started successfully." bold
-    else
-        colorize red "Failed to start watchdog." bold
-    fi
-    echo ''
+	echo
+	colorize yellow "Creating a service for watchdog" bold
+	echo
+    
+SERVICE_FILE="/etc/systemd/system/easymesh-watchdog.service"    
+cat > $SERVICE_FILE <<EOF
+[Unit]
+Description=EasyMesh Watchdog Service
+After=network.target
+
+[Service]
+ExecStart=/bin/bash /etc/monitor.sh
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+	# Execute the script in the background
+    systemctl daemon-reload >/dev/null 2>&1
+	systemctl enable --now easymesh-watchdog.service
+	
+    echo
+    colorize green "Watchdog service started successfully" bold
+    echo
 press_key
 }
 
 # Function to stop the watchdog
 stop_watchdog() {
-	echo ''
-    PIDS=$(pgrep -f /etc/monitor.sh)
-    if [ -n "$PIDS" ]; then
-        pkill -f /etc/monitor.sh > /dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            colorize green "Watchdog stopped successfully." bold
-        else
-            colorize red "Failed to stop watchdog." bold
-        fi
-    else
-        colorize yellow "Watchdog is not running." bold
-    fi
-    echo ''
-    rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null
+	echo 
+	SERVICE_FILE="/etc/systemd/system/easymesh-watchdog.service" 
+	
+	if [[ ! -f $SERVICE_FILE ]]; then
+		 colorize red "Watchdog service does not exists." bold
+		 sleep 1
+		 return 1
+	fi
+	
+    systemctl disable --now easymesh-watchdog.service &> /dev/null
+    rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null 
+    rm -f "$SERVICE_FILE"  &> /dev/null 
+    systemctl daemon-reload &> /dev/null
+    colorize yellow "Watchdog service stopped and removed successfully" bold
+    echo
     press_key
 }
 
 view_watchdog_status(){
-    PIDS=$(pgrep -f /etc/monitor.sh)
-    if [ -z "$PIDS" ]; then
-    	colorize red "	Watchdog is not running" bold
-    else
-    	colorize green "	Watchdog is running" bold
-    fi
-    echo "---------------------------------------------"
+	if systemctl is-active --quiet "easymesh-watchdog.service"; then
+				colorize green "	Watchdog service is running" bold
+			else
+				colorize red "	Watchdog service is not running" bold
+	fi		
+
 }
 # Function to view logs
 view_logs() {
@@ -662,7 +679,7 @@ echo -e "   ${CYAN}╔═══════════════════�
 echo -e "   ║            🌐 ${WHITE}EasyMesh                 ${CYAN}║"
 echo -e "   ║        ${WHITE}VPN Network Solution            ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║  ${WHITE}Version: 0.94 beta                    ${CYAN}║"
+echo -e "   ║  ${WHITE}Version: 0.95 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
