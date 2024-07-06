@@ -697,9 +697,9 @@ echo -e "   ║  ${WHITE}Version: 0.95 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
-echo -e "   ╠════════════════════════════════════════╣"
+echo -e "   ╠════════════════════════════════════════╣${RESET}"
 echo -e "   ║        $(check_core_status)         ║"
-echo -e "   ╚════════════════════════════════════════╝${RESET}"
+echo -e "   ╚════════════════════════════════════════╝"
 
     echo ''
     colorize green "	[1] Connect to the Mesh Network" bold 
