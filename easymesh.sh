@@ -671,6 +671,20 @@ set_cronjob(){
    	
 }
 
+check_core_status(){
+    DEST_DIR="/root/easytier"
+    FILE1="easytier-core"
+    FILE2="easytier-cli"
+    
+        if [ -f "$DEST_DIR/$FILE1" ] && [ -f "$DEST_DIR/$FILE2" ]; then
+        colorize green "EasyMesh Core Installed" bold
+        return 0
+    else
+        colorize red "EasyMesh Core not found" bold
+        return 1
+    fi
+}
+
 # Function to display menu
 display_menu() {
     clear
@@ -684,7 +698,7 @@ echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║        ${WHITE}EasyMesh Core Installed         ${CYAN}║"
+echo -e "   ║        $(check_core_status)         ║"
 echo -e "   ╚════════════════════════════════════════╝${RESET}"
 
     echo ''
