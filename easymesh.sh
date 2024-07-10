@@ -419,7 +419,8 @@ start_watchdog(){
 	read -p "Enter the latency threshold in ms (200): " LATENCY_THRESHOLD
 	read -p "Enter the time between checks in seconds (8): " CHECK_INTERVAL
 	
-	rm -f /etc/monitor.sh /etc/monitor.log &> /dev/null
+	
+	stop_watchdog
 	touch /etc/monitor.sh /etc/monitor.log &> /dev/null
 	
 cat << EOF | sudo tee /etc/monitor.sh > /dev/null
@@ -528,7 +529,7 @@ stop_watchdog() {
     systemctl daemon-reload &> /dev/null
     colorize yellow "Watchdog service stopped and removed successfully" bold
     echo
-    press_key
+    sleep 2
 }
 
 view_watchdog_status(){
