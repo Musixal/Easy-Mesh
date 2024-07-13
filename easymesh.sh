@@ -158,8 +158,13 @@ SERVICE_FILE="/etc/systemd/system/easymesh.service"
 connect_network_pool(){
 	clear
 	colorize cyan "Connect to the Mesh Network" bold 
-	echo ''
-	
+	echo 
+	colorize yellow "Leave the peer addresses blank to enable reverse mode.
+Ws and wss modes are not recommended for iran's network environment.
+Try disable multi-thread mode if your mesh network is unstable.
+UDP mode is more stable rather than tcp mode.
+	"
+	echo
     read -p "[-] Enter Peer IPv4/IPv6 Addresses (separate multiple addresses by ','): " PEER_ADDRESSES
     
     read -p "[*] Enter Local IPv4 Address (e.g., 10.144.144.1): " IP_ADDRESS
@@ -212,7 +217,7 @@ connect_network_pool(){
         *) colorize red "Invalid choice. Defaulting to tcp." ; DEFAULT_PROTOCOL="tcp" ;;
     esac
 	
-	echo ''
+	echo 
 	read -p "[-] Enable encryption? (yes/no): " ENCRYPTION_CHOICE
 	case $ENCRYPTION_CHOICE in
         [Nn]*)
@@ -225,8 +230,35 @@ connect_network_pool(){
              ;;
 	esac
 	
-	echo ''
-
+	echo
+	
+	read -p "[-] Enable multi-thread? (yes/no): " MULTI_THREAD
+	case $MULTI_THREAD in
+        [Nn]*)
+        	MULTI_THREAD=""
+        	colorize yellow "Multi-thread is disabled"
+       		 ;;
+   		*)
+       		MULTI_THREAD="--multi-thread"
+       		colorize yellow "Multi-thread is enabled"
+             ;;
+	esac
+	
+	echo
+	
+	read -p "[-] Enable IPv6? (yes/no): " IPV6_MODE
+	case $IPV6_MODE in
+        [Nn]*)
+        	IPV6_MODE="--disable-ipv6"
+        	colorize yellow "IPv6 is disabled"
+       		 ;;
+   		*)
+       		IPV6_MODE=""
+       		colorize yellow "IPv6 is enabled"
+             ;;
+	esac
+	
+	echo
     
     IFS=',' read -ra ADDR_ARRAY <<< "$PEER_ADDRESSES"
     PROCESSED_ADDRESSES=()
@@ -260,7 +292,7 @@ Description=EasyMesh Network Service
 After=network.target
 
 [Service]
-ExecStart=/root/easytier/easytier-core -i $IP_ADDRESS $PEER_ADDRESS --hostname $HOSTNAME --network-secret $NETWORK_SECRET --default-protocol $DEFAULT_PROTOCOL $LISTENERS --multi-thread $ENCRYPTION_OPTION
+ExecStart=/root/easytier/easytier-core -i $IP_ADDRESS $PEER_ADDRESS --hostname $HOSTNAME --network-secret $NETWORK_SECRET --default-protocol $DEFAULT_PROTOCOL $LISTENERS $MULTI_THREAD $ENCRYPTION_OPTION $IPV6_MODE
 Restart=on-failure
 
 [Install]
@@ -694,7 +726,7 @@ echo -e "   ${CYAN}╔═══════════════════�
 echo -e "   ║            🌐 ${WHITE}EasyMesh                 ${CYAN}║"
 echo -e "   ║        ${WHITE}VPN Network Solution            ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║  ${WHITE}Version: 0.95 beta                    ${CYAN}║"
+echo -e "   ║  ${WHITE}Version: 0.96 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
