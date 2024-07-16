@@ -8,7 +8,7 @@
 اسکریپت زیر را در سرور خود (دبیان یا اوبونتو) اجرا کنید:
 
 ```
-bash <(curl -Ls https://github.com/Musixal/easy-mesh/raw/main/easymesh.sh)
+bash <(curl -Ls --ipv4 https://github.com/Musixal/easy-mesh/raw/main/easymesh.sh)
 ```
 
 # آموزش در یوتیوب
