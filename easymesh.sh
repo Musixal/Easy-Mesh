@@ -704,11 +704,6 @@ check_core_status(){
 # New function to remove core
 remove_easymesh_core(){
 	echo
-	if [[ -f $SERVICE_FILE ]]; then
-		 colorize red "	EasyMesh service exists. please remove it first then remove the core." bold
-		 sleep 2
-		 return 1
-	fi
 	
 	if [[ ! -d '/root/easytier' ]]; then
 		 colorize red "	EasyMesh directory not found." bold
