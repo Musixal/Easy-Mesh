@@ -68,38 +68,19 @@ colorize() {
     echo -e "${style_code}${color_code}${text}${reset}"
 }
 
-
-# Function to install unzip if not already installed
-install_unzip() {
-    if ! command -v unzip &> /dev/null; then
-        # Check if the system is using apt package manager
-        if command -v apt-get &> /dev/null; then
-            echo -e "${RED}unzip is not installed. Installing...${NC}"
-            sleep 1
-            sudo apt-get update
-            sudo apt-get install -y unzip
-        else
-            echo -e "${RED}Error: Unsupported package manager. Please install unzip manually.${NC}\n"
-            read -p "Press any key to continue..."
-            exit 1
-        fi
-    fi
-}
-
-
 install_easytier() {
     # Define the directory and files
     DEST_DIR="/root/easytier"
     FILE1="easytier-core"
     FILE2="easytier-cli"
-    URL_X86="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
-    URL_ARM_SOFT="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabi-v1.1.0.zip"              
-    URL_ARM_HARD="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabihf-v1.1.0.zip"
+    #URL_X86="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
+    #URL_ARM_SOFT="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabi-v1.1.0.zip"              
+    #URL_ARM_HARD="https://github.com/EasyTier/EasyTier/releases/download/v1.1.0/easytier-armv7-unknown-linux-musleabihf-v1.1.0.zip"
 
     #New Version
-    #URL_X86="https://github.com/EasyTier/EasyTier/releases/download/v1.2.0/easytier-linux-x86_64-v1.2.0.zip"
-    #URL_ARM_SOFT="https://github.com/EasyTier/EasyTier/releases/download/v1.2.0/easytier-linux-armv7-v1.2.0.zip"              
-    #URL_ARM_HARD="https://github.com/EasyTier/EasyTier/releases/download/v1.2.0/easytier-linux-armv7hf-v1.2.0.zip"
+    URL_X86="https://github.com/Musixal/Easy-Mesh/raw/main/core/v1.2.0/easytier-linux-x86_64/"
+    URL_ARM_SOFT="https://github.com/Musixal/Easy-Mesh/raw/main/core/v1.2.0/easytier-linux-armv7/"              
+    URL_ARM_HARD="https://github.com/Musixal/Easy-Mesh/raw/main/core/v1.2.0/easytier-linux-armv7hf/"
     
     # Check if the directory exists
     if [ -d "$DEST_DIR" ]; then    
@@ -114,14 +95,11 @@ install_easytier() {
     ARCH=$(uname -m)
     if [ "$ARCH" = "x86_64" ]; then
         URL=$URL_X86
-        ZIP_FILE="/root/easytier/easytier-x86_64-unknown-linux-musl-v1.1.0.zip"
     elif [ "$ARCH" = "armv7l" ] || [ "$ARCH" = "aarch64" ]; then
         if [ "$(ldd /bin/ls | grep -c 'armhf')" -eq 1 ]; then
             URL=$URL_ARM_HARD
-            ZIP_FILE="/root/easytier/easytier-armv7-unknown-linux-musleabihf-v1.1.0.zip"
         else
             URL=$URL_ARM_SOFT
-            ZIP_FILE="/root/easytier/easytier-armv7-unknown-linux-musleabi-v1.1.0.zip"
         fi
     else
         colorize red "Unsupported architecture: $ARCH\n" bold
@@ -129,26 +107,27 @@ install_easytier() {
     fi
 
 
-    colorize yellow "Installing EasyMesh Core...\n" bold
     mkdir -p $DEST_DIR &> /dev/null
-    curl -L $URL -o $ZIP_FILE &> /dev/null
-    unzip $ZIP_FILE -d $DEST_DIR &> /dev/null
-    rm $ZIP_FILE &> /dev/null
+    colorize yellow "Downloading EasyMesh Core...\n"
+    curl -Ls "$URL/easytier-cli" -o "$DEST_DIR/easytier-cli"
+    curl -Ls "$URL/easytier-core" -o "$DEST_DIR/easytier-core"
+
 
     if [ -f "$DEST_DIR/$FILE1" ] && [ -f "$DEST_DIR/$FILE2" ]; then
+    	chmod +x "$DEST_DIR/easytier-cli"
+    	chmod +x "$DEST_DIR/easytier-core"
         colorize green "EasyMesh Core Installed Successfully...\n" bold
         sleep 1
         return 0
     else
         colorize red "Failed to install EasyMesh Core...\n" bold
-        return 1
+        exit 1
     fi
 }
 
 
 
-# Call the functions
-install_unzip
+# Call the function
 install_easytier
 
 generate_random_secret() {
@@ -346,7 +325,7 @@ restart_easymesh_service() {
 }
 
 remove_easymesh_service() {
-	echo ''
+	echo
 	if [[ ! -f $SERVICE_FILE ]]; then
 		 colorize red "	EasyMesh service does not exists." bold
 		 sleep 1
@@ -722,6 +701,28 @@ check_core_status(){
     fi
 }
 
+# New function to remove core
+remove_easymesh_core(){
+	echo
+	if [[ -f $SERVICE_FILE ]]; then
+		 colorize red "	EasyMesh service exists. please remove it first then remove the core." bold
+		 sleep 2
+		 return 1
+	fi
+	
+	if [[ ! -d '/root/easytier' ]]; then
+		 colorize red "	EasyMesh directory not found." bold
+		 sleep 2
+		 return 1
+	fi
+	
+	
+	rm -rf /root/easytier &> /dev/null
+	
+	colorize green "	Easymesh core deleted successfully." bold
+	sleep 2
+
+}
 # Function to display menu
 display_menu() {
     clear
@@ -730,7 +731,7 @@ echo -e "   ${CYAN}╔═══════════════════�
 echo -e "   ║            🌐 ${WHITE}EasyMesh                 ${CYAN}║"
 echo -e "   ║        ${WHITE}VPN Network Solution            ${CYAN}║"
 echo -e "   ╠════════════════════════════════════════╣"
-echo -e "   ║  ${WHITE}Version: 0.96 beta                    ${CYAN}║"
+echo -e "   ║  ${WHITE}Version: 0.97 beta                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Developer: Musixal                    ${CYAN}║"
 echo -e "   ║  ${WHITE}Telegram Channel: @Gozar_Xray         ${CYAN}║"
 echo -e "   ║  ${WHITE}GitHub: github.com/Musixal/easy-mesh  ${CYAN}║"
@@ -748,7 +749,9 @@ echo -e "   ╚═════════════════════�
     colorize reset "	[7] Set Watchdog [Auto-Restarter]"
     colorize reset "	[8] Cron-jon setting"   
     colorize yellow "	[9] Restart Service" 
-    colorize magenta "	[10] Remove Service" 
+    colorize red "	[10] Remove Service" 
+    colorize magenta "	[11] Remove Core" 
+    
     echo -e "	[0] Exit" 
     echo ''
 }
@@ -770,6 +773,7 @@ read_option() {
         8) set_cronjob ;;
         9) restart_easymesh_service ;;
         10) remove_easymesh_service ;;
+        11) remove_easymesh_core ;;
         0) exit 0 ;;
         *) colorize red "	Invalid option!" bold && sleep 1 ;;
     esac
