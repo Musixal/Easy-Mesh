@@ -157,7 +157,7 @@ UDP mode is more stable rather than tcp mode.
     	return 1
     fi
     
-    read -r -p "[*] Enter Hostname (e.g., Hetnzer): " HOSTNAME
+    read -r -p "[*] Enter Hostname (e.g., Hetzner): " HOSTNAME
     if [ -z $HOSTNAME ]; then
     	colorize red "Null value. aborting..."
     	sleep 2
